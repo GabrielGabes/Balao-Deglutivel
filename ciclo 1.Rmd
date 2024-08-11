@@ -1,0 +1,296 @@
+```{r}
+setwd("C:/Users/gabri/OneDrive/Documentos/Balão deglutivel")
+df <- read_excel("df.xlsx")
+
+#######################
+df$NOME = NULL
+df$A2 = NULL
+
+#######################
+
+names(df)
+
+nrow(df)
+```
+
+```{r}
+for (coluna in names(df)){
+  classe = class(df[[coluna]])
+  if (classe == "numeric"){
+    print(coluna)
+  }
+}
+
+coluna_num = 0
+for (coluna in names(df)){
+  classe = class(df[[coluna]])
+  coluna_num = coluna_num + 1
+  if (classe == "numeric"){
+    p_valor = retorne_p(shapiro.test(df[[coluna]])$p.value)
+    print(paste(coluna, '=====> [', p_valor, ']'))
+    
+    #print(teste_normalidade(df, coluna_num))
+  }
+}
+```
+
+```{r}
+df$diff = df$peso_1sem - df$peso_inicial
+shapiro.test(df$diff)$p.value
+
+##################################################################
+#Teste de Hipotese - Teste T
+teste_t = t.test(df$peso_1sem, df$peso_inicial, paired=T)#, alternative="greater")
+p_valor = retorne_p(teste_t$p.value)
+
+#Estimador Mean Difference
+mean_diff = round(teste_t[["estimate"]], 2)
+intervalo1 = round(teste_t[["conf.int"]][1], 2)
+intervalo2 = round(teste_t[["conf.int"]][2], 2)
+estimador = paste0(mean_diff," (",intervalo1," to ",intervalo2,') (',p_valor,')')
+estimador
+
+##################################################################
+#Teste de Hipotese - Teste Mann Whitney
+teste_man = wilcox.test(df$peso_1sem, df$peso_inicial, conf.int = TRUE)#, paired=T, alternative="greater")
+p_valor = retorne_p(teste_man$p.value)
+
+#Estimador Hodges Lehmann
+estimador = as.character(round(teste_man$estimate,2))
+IC_00 = as.character(round(teste_man$conf.int[1],2))
+IC_01 = as.character(round(teste_man$conf.int[2],2))
+hodges_lehmann = paste0(estimador,' [',IC_00,' to ',IC_01,'] (',p_valor,')')
+hodges_lehmann
+```
+
+```{r}
+fd = data.frame(Inicial = character(0), Final = character(0),
+                "Shapiro" = character(0), 
+                "Mean Difference" = character(0), "P.value1" = character(0),
+                "Rodge Lehmann" = character(0), "P.value2" = character(0))
+
+##############################################################
+lista = c("peso_1sem","peso_2sem","peso_1mes","peso_2mes","peso_3mes")
+for (item_final in lista){
+  fd[nrow(fd)+1,] = c("peso_inicial", item_final,
+                      NA,
+                      NA,NA,
+                      NA,NA)}
+###############################
+lista = c("peso_2sem","peso_1mes","peso_2mes","peso_3mes")
+for (item_final in lista){
+  fd[nrow(fd)+1,] = c("peso_1sem", item_final,
+                      NA,
+                      NA,NA,
+                      NA,NA)}
+###############################
+lista = c("peso_1mes","peso_2mes","peso_3mes")
+for (item_final in lista){
+  fd[nrow(fd)+1,] = c("peso_2sem", item_final,
+                      NA,
+                      NA,NA,
+                      NA,NA)}
+###############################
+lista = c("peso_2mes","peso_3mes")
+for (item_final in lista){
+  fd[nrow(fd)+1,] = c("peso_1mes", item_final,
+                      NA,
+                      NA,NA,
+                      NA,NA)}
+###############################
+fd[nrow(fd)+1,] = c("peso_2mes", "peso_3mes",
+                    NA,
+                    NA,NA,
+                    NA,NA)
+
+##############################################################
+lista = c("imc_1sem","imc_2sem","imc_1mes","imc_2mes","imc_3mes")
+for (item_final in lista){
+  fd[nrow(fd)+1,] = c("imc_inicial", item_final,
+                      NA,
+                      NA,NA,
+                      NA,NA)}
+###############################
+lista = c("imc_2sem","imc_1mes","imc_2mes","imc_3mes")
+for (item_final in lista){
+  fd[nrow(fd)+1,] = c("imc_1sem", item_final,
+                      NA,
+                      NA,NA,
+                      NA,NA)}
+###############################
+lista = c("imc_1mes","imc_2mes","imc_3mes")
+for (item_final in lista){
+  fd[nrow(fd)+1,] = c("imc_2sem", item_final,
+                      NA,
+                      NA,NA,
+                      NA,NA)}
+###############################
+lista = c("imc_2mes","imc_3mes")
+for (item_final in lista){
+  fd[nrow(fd)+1,] = c("imc_1mes", item_final,
+                      NA,
+                      NA,NA,
+                      NA,NA)}
+###############################
+fd[nrow(fd)+1,] = c("imc_2mes","imc_3mes",
+                    NA,
+                    NA,NA,
+                    NA,NA)
+##################################################################
+
+for (coluna in 1:nrow(fd)){
+  inicial = fd$Inicial[coluna]
+  final = fd$Final[coluna]
+
+  df$diff = df[[final]] - df[[inicial]]
+  p_shapiro = retorne_p(shapiro.test(df$diff)$p.value)
+  
+  ##################################################################
+  #Teste de Hipotese - Teste T
+  teste_t = t.test(df[[final]], df[[inicial]], paired=T)
+  p_valor = retorne_p(teste_t$p.value)
+  
+  #Estimador Mean Difference
+  mean_diff = as.character(round(teste_t[["estimate"]], 2))
+  intervalo1 = as.character(round(teste_t[["conf.int"]][1], 2))
+  intervalo2 = as.character(round(teste_t[["conf.int"]][2], 2))
+  estimador_mean_diff = paste0(mean_diff," (",intervalo1," to ",intervalo2,')')
+  
+  ##################################################################
+  #Teste de Hipotese - Teste Mann Whitney
+  teste_man = wilcox.test(df[[final]], df[[inicial]], conf.int = TRUE)
+  p_valor2 = retorne_p(teste_man$p.value)
+  
+  #Estimador Hodges Lehmann
+  estimador = as.character(round(teste_man$estimate,2))
+  IC_00 = as.character(round(teste_man$conf.int[1],2))
+  IC_01 = as.character(round(teste_man$conf.int[2],2))
+  hodges_lehmann = paste0(estimador,' [',IC_00,' to ',IC_01,']')
+
+  fd[coluna,] = c(fd$Inicial[coluna], fd$Final[coluna],
+                  p_shapiro,
+                  estimador_mean_diff, p_valor,
+                  hodges_lehmann, p_valor2)
+}
+
+fd
+
+fd$Shapiro = NULL
+fd$Mean.Difference = NULL
+fd$P.value1 = NULL
+
+fd
+```
+```{r}
+hist(df$peso_inicial - df$peso_1sem, bins=10)
+hist(df$peso_inicial - df$peso_2sem, bins=10)
+hist(df$peso_inicial - df$peso_1mes, bins=10)
+hist(df$peso_inicial - df$peso_2mes, bins=10)
+hist(df$peso_inicial - df$peso_3mes, bins=10)
+
+lista = c("peso_1sem","peso_2sem","peso_1mes","peso_2mes","peso_3mes")
+fd = data.frame(diferenca_peso = character(0), comparacao = character(0))
+for (coluna in lista){
+  df_teste = df %>% select(peso_inicial, coluna)
+  df_teste = na.omit(df_teste)
+  diff = df_teste$peso_inicial - df_teste[[coluna]]
+  
+  fd = rbind(fd, cbind(diff, coluna))
+}
+
+fd
+#install.packages("ggridges")
+library(ggridges)
+
+fd$diff = as.numeric(fd$diff)
+fd$coluna = factor(fd$coluna, levels = lista)
+summary(fd$coluna)
+
+ggplot(fd, aes(x = diff, y = coluna)) +
+  geom_density_ridges() #+
+  #scale_x_continuous(breaks=seq(from = 0, to = 30, by = 5))
+
+```
+
+```{r}
+fd = data.frame(ID = character(0), 
+                PESO = character(0),
+                tempo = character(0))
+lista = c("peso_inicial","peso_1sem","peso_2sem","peso_1mes","peso_2mes","peso_3mes")
+
+for (coluna in lista){
+  fdzinho = cbind(1:nrow(df), df[[coluna]], coluna)
+  fd = rbind(fd, fdzinho)
+}
+
+fd <- fd %>% rename("ID" = "V1",
+                    "PESO" = "V2")
+
+fd$PESO = as.numeric(fd$PESO)
+fd$coluna = factor(fd$coluna, levels = lista)
+fd
+```
+
+```{r}
+grafi = fd %>% filter(!is.na(PESO)) %>% group_by(coluna) %>% summarise(n = n())
+grafi
+
+ggplot() +
+  geom_point(data=fd, aes(x=as.factor(coluna), y=PESO, color=as.factor(coluna)), alpha=0.5, size=2.5, show.legend = F) + 
+  geom_boxplot(data=fd, aes(x=as.factor(coluna), y=PESO, color=as.factor(coluna)), alpha=0.5, fill = 'white', show.legend = F) +
+  geom_line(data=fd, aes(x=as.factor(coluna), y=PESO, color=as.factor(coluna), group = ID), show.legend = F, alpha=0.4) +
+  labs(y='Peso', title="Peso ao longo do tempo", x="") + 
+    theme(plot.title=element_text(face='italic'), axis.title=element_text(size=9, face='italic'), 
+          legend.position = "bottom",axis.line = element_line(colour = "black")) +
+    theme_stata() + 
+    scale_y_continuous(breaks=seq(from = 60, to = 150, by = 5),
+                       limits = c(60, 150)) +
+    theme(axis.title.x = element_text(size = 11),
+          axis.title.y = element_text(size = 11)) + 
+  theme(legend.position = "none") +
+  scale_x_discrete(labels=c("Peso inicial\n(n=41)",
+                            "Peso 1 sem\n(n=41)",
+                            "Peso 2 sem\n(n=41)",
+                            "Peso 1 mes\n(n=41)",
+                            "Peso 2 mes\n(n=38)",
+                            "Peso 3 mes\n(n=36)"))
+ggsave("Agrupamentos2.png", height=25, width=30, units="cm", dpi=600)
+```
+
+```{r}
+lista = c("peso_inicial","peso_1sem","peso_2sem","peso_1mes","peso_2mes","peso_3mes")
+for (coluna in lista){
+  p_valor = retorne_p(shapiro.test(df[[coluna]])$p.value)
+  print(paste(coluna, " -> ", p_valor))
+}
+
+df_teste = df %>% select(peso_inicial, peso_1sem, peso_2sem, peso_1mes, peso_2mes, peso_3mes)
+df_teste = na.omit(df_teste)
+
+df_teste = as.matrix(df_teste)
+
+friedman.test(df_teste)
+
+#friedman.test(df_teste$peso_inicial, df_teste$peso_1sem, df_teste$peso_2sem) #, df_teste$peso_1mes, df_teste$peso_2mes, df_teste$peso_3mes)
+
+```
+```{r}
+# Exemplo de cálculo de W de Kendall no R
+
+# Substitua os valores abaixo com os ranks médios de suas condições
+# após a realização do Teste de Friedman.
+# Por exemplo: R <- c(3.2, 2.5, 4.1, 1.5, 5.0, 6.7)
+R <- df_teste
+
+# Substitua abaixo pelo número real de sujeitos em seus dados
+n <- nrow(R)
+
+# O número de condições é calculado como o comprimento de R
+k <- length(R)
+
+# Cálculo de W de Kendall
+W <- (12 * sum(R^2)) / (n^2 * (k^3 - k))
+print(W)
+
+```
+
